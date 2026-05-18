@@ -79,6 +79,6 @@
   const title = extractTitle();
   if (title) {
     chrome.storage.session.set({ productTitle: title, pageUrl: window.location.href });
-    console.log("[PriceHawk] Detected product:", title);
+    console.log("[GeniusCart] Detected product:", title);
   }
 })();

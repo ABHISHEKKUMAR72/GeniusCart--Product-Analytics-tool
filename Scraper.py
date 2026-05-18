@@ -209,245 +209,178 @@ def scrape_myntra(query, max_pages=1, headless=True):
 # ---------- Flipkart ----------
 def scrape_flipkart(query, max_pages=1, headless=True):
     driver = _init_driver(headless)
-    wait = WebDriverWait(driver, 12)
     try:
         driver.get(f"https://www.flipkart.com/search?q={query.replace(' ', '+')}")
-        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@class='KzDlHZ'] | //div[@data-id]")))
-    except TimeoutException:
-        print(f"Flipkart: Timed out waiting for results.")
-        driver.quit()
-        return pd.DataFrame()
+        time.sleep(3)
+        driver.execute_script("window.scrollBy(0,1500)")
+        time.sleep(2)
     except Exception as e:
         print(f"Flipkart page load error: {e}")
         driver.quit()
         return pd.DataFrame()
 
-    products = []
-    for page in range(max_pages):
-        try:
-            items = driver.find_elements(By.XPATH, "//div[@class='KzDlHZ']")
-            if not items:
-                items = driver.find_elements(By.CSS_SELECTOR, "div[data-id], div.s1Q8DL")
-
-            for item in items:
-                try:
-                    try:
-                        title = item.find_element(By.XPATH, ".//a[contains(@class, 'IRpwTa')]").text
-                        if not title:
-                            title = item.find_element(By.XPATH, ".//span[@class='BvHyOb']").text
-                    except:
-                        title = ""
-
-                    try:
-                        price = item.find_element(By.XPATH, ".//div[@class='_30jeq3']").text
-                    except:
-                        try:
-                            price = item.find_element(By.CSS_SELECTOR, "div._30jeq3, span._16Jk6d").text
-                        except:
-                            price = "N/A"
-
-                    try:
-                        link = item.find_element(By.XPATH, ".//a[@class='IRpwTa']").get_attribute("href")
-                        if not link:
-                            link = item.find_element(By.TAG_NAME, "a").get_attribute("href")
-                    except:
-                        link = ""
-
-                    if title and link:
-                        if not link.startswith("http"):
-                            link = "https://www.flipkart.com" + link
-                        products.append({"Source": "Flipkart", "Title": title, "Price": price, "Rating": "N/A", "Link": link})
-                except Exception:
-                    continue
-
-            try:
-                next_btn = driver.find_element(By.XPATH, "//a[@class='_1LKTO3']")
-                if next_btn and page < max_pages - 1:
-                    next_btn.click()
-                    wait.until(EC.staleness_of(items[0]))
-                else:
-                    break
-            except Exception:
-                break
-        except Exception as e:
-            print(f"Flipkart scraping error on page {page}: {e}")
-            break
-
+    raw = driver.execute_script("""
+        var results = [];
+        var containers = document.querySelectorAll('div[data-id]');
+        if (!containers.length) {
+            var links = document.querySelectorAll('a[href*="/p/itm"]');
+            var cSet = new Set();
+            for (var l of links) { var el=l.parentElement; for(var i=0;i<5&&el;i++) el=el.parentElement; if(el) cSet.add(el); }
+            containers = [...cSet];
+        }
+        for (var c of [...containers].slice(0,25)) {
+            try {
+                var linkEl = c.querySelector('a[href*="/p/itm"]') || c.querySelector('a[href*="/p/"]') || c.querySelector('a[href]');
+                if (!linkEl) continue;
+                var href = linkEl.getAttribute('href');
+                if (href && !href.startsWith('http')) href = 'https://www.flipkart.com' + href;
+                if (!href || !href.includes('flipkart.com')) continue;
+                var lines = c.innerText.split('\\n').map(function(t){return t.trim()}).filter(Boolean);
+                var title='', priceRaw='';
+                for (var t of lines) { if(!title && t.length>8 && !t.startsWith('₹') && !t.includes('% off') && !t.includes('Sponsored') && !t.startsWith('Free')) title=t; if(!priceRaw && t.startsWith('₹') && t.length<15) priceRaw=t; }
+                if (title && href) results.push({Source:'Flipkart',Title:title,Price:priceRaw,Rating:'N/A',Link:href});
+            } catch(e) { continue; }
+        }
+        return results;
+    """)
     driver.quit()
-    return pd.DataFrame(products)
+    return pd.DataFrame(raw) if raw else pd.DataFrame()
 
 # ---------- Ajio ----------
 def scrape_ajio(query, max_pages=1, headless=True):
     driver = _init_driver(headless)
-    wait = WebDriverWait(driver, 12)
     try:
         driver.get(f"https://www.ajio.com/search/?text={query.replace(' ', '+')}")
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".item, .rilrtl-products-list__item")))
-    except TimeoutException:
-        print(f"Ajio: Timed out waiting for results.")
-        driver.quit()
-        return pd.DataFrame()
+        time.sleep(4)
+        driver.execute_script("window.scrollBy(0,1500)")
+        time.sleep(2)
     except Exception as e:
         print(f"Ajio page load error: {e}")
         driver.quit()
         return pd.DataFrame()
 
-    products = []
-    for page in range(max_pages):
-        items = driver.find_elements(By.CSS_SELECTOR, ".item, .rilrtl-products-list__item")
-        for item in items:
-            try:
-                try: title = item.find_element(By.CSS_SELECTOR, ".nameCls, .name").text
-                except: title = ""
-                try: price = item.find_element(By.CSS_SELECTOR, ".price").text
-                except: price = "N/A"
-                try: link = item.find_element(By.TAG_NAME, "a").get_attribute("href")
-                except: link = ""
-                if title and link:
-                    products.append({"Source": "Ajio", "Title": title, "Price": price, "Rating": "N/A", "Link": link})
-            except: break
+    raw = driver.execute_script("""
+        var results = [], seen = new Set();
+        var links = document.querySelectorAll('a[href*="/p/"]');
+        for (var link of [...links].slice(0,30)) {
+            try {
+                var href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) href = 'https://www.ajio.com' + href;
+                if (seen.has(href) || !href.includes('ajio.com')) continue;
+                seen.add(href);
+                var container = link; for(var i=0;i<4&&container.parentElement;i++) container=container.parentElement;
+                var lines = container.innerText.split('\\n').map(function(t){return t.trim()}).filter(Boolean);
+                var title='', priceRaw='';
+                for (var t of lines) { if(!title && t.length>3 && t.length<100 && !t.startsWith('₹') && !t.includes('% off')) title=t; if(!priceRaw && (t.startsWith('₹')||t.startsWith('Rs')) && t.length<15) priceRaw=t; }
+                if (title && href) results.push({Source:'Ajio',Title:title,Price:priceRaw,Rating:'N/A',Link:href});
+            } catch(e) { continue; }
+        }
+        return results.slice(0,20);
+    """)
     driver.quit()
-    return pd.DataFrame(products)
+    return pd.DataFrame(raw) if raw else pd.DataFrame()
 
 # ---------- Nykaa ----------
 def scrape_nykaa(query, max_pages=1, headless=True):
     driver = _init_driver(headless)
-    wait = WebDriverWait(driver, 12)
     try:
         driver.get(f"https://www.nykaa.com/search/result/?q={query.replace(' ', '+')}")
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".product-list-box, .css-d5z3ro, .css-xrzmfa")))
-    except TimeoutException:
-        print(f"Nykaa: Timed out waiting for results.")
-        driver.quit()
-        return pd.DataFrame()
+        time.sleep(4)
+        driver.execute_script("window.scrollBy(0,1500)")
+        time.sleep(2)
     except Exception as e:
         print(f"Nykaa page load error: {e}")
         driver.quit()
         return pd.DataFrame()
 
-    products = []
-    for page in range(max_pages):
-        items = driver.find_elements(By.CSS_SELECTOR, ".product-list-box, .css-d5z3ro, .css-xrzmfa")
-        for item in items:
-            try:
-                try: title = item.find_element(By.CSS_SELECTOR, ".css-xrzmfa, .title").text
-                except: title = ""
-                try: price = item.find_element(By.CSS_SELECTOR, ".css-111z9ua, .price").text
-                except: price = "N/A"
-                try: link = item.find_element(By.TAG_NAME, "a").get_attribute("href")
-                except: link = ""
-                if title and link:
-                    products.append({"Source": "Nykaa", "Title": title, "Price": price, "Rating": "N/A", "Link": link})
-            except: break
+    raw = driver.execute_script("""
+        var results = [], seen = new Set();
+        var links = document.querySelectorAll('a[href*="/p/"]');
+        for (var link of [...links].slice(0,30)) {
+            try {
+                var href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) href = 'https://www.nykaa.com' + href;
+                if (seen.has(href) || !href.includes('nykaa.com')) continue;
+                seen.add(href);
+                var container = link; for(var i=0;i<4&&container.parentElement;i++) container=container.parentElement;
+                var lines = container.innerText.split('\\n').map(function(t){return t.trim()}).filter(Boolean);
+                var title='', priceRaw='';
+                for (var t of lines) { if(!title && t.length>3 && t.length<120 && !t.startsWith('₹') && !t.includes('% off')) title=t; if(!priceRaw && (t.startsWith('₹')||t.startsWith('Rs')) && t.length<15) priceRaw=t; }
+                if (title && href) results.push({Source:'Nykaa',Title:title,Price:priceRaw,Rating:'N/A',Link:href});
+            } catch(e) { continue; }
+        }
+        return results.slice(0,20);
+    """)
     driver.quit()
-    return pd.DataFrame(products)
+    return pd.DataFrame(raw) if raw else pd.DataFrame()
 
 # ---------- TataCLiQ ----------
 def scrape_tatacliq(query, max_pages=1, headless=True):
     driver = _init_driver(headless)
-    wait = WebDriverWait(driver, 12)
     try:
         driver.get(f"https://www.tatacliq.com/search/?searchCategory=all&text={query.replace(' ', '+')}")
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".ProductModule__dummyDiv, .ProductDescription__dummyDiv")))
-    except TimeoutException:
-        print(f"TataCLiQ: Timed out waiting for results.")
-        driver.quit()
-        return pd.DataFrame()
+        time.sleep(4)
+        driver.execute_script("window.scrollBy(0,1500)")
+        time.sleep(2)
     except Exception as e:
         print(f"TataCLiQ page load error: {e}")
         driver.quit()
         return pd.DataFrame()
 
-    products = []
-    for page in range(max_pages):
-        items = driver.find_elements(By.CSS_SELECTOR, ".ProductModule__dummyDiv, .ProductDescription__dummyDiv")
-        for item in items:
-            try:
-                try: title = item.find_element(By.CSS_SELECTOR, "h2, .ProductDescription__description").text
-                except: title = ""
-                try: price = item.find_element(By.CSS_SELECTOR, "h3, .ProductDescription__priceHolder").text
-                except: price = "N/A"
-                try: link = item.find_element(By.TAG_NAME, "a").get_attribute("href")
-                except: link = ""
-                if title and link:
-                    products.append({"Source": "TataCLiQ", "Title": title, "Price": price, "Rating": "N/A", "Link": link})
-            except: break
+    raw = driver.execute_script("""
+        var results = [], seen = new Set();
+        var links = document.querySelectorAll('a[href*="/p/"]');
+        for (var link of [...links].slice(0,30)) {
+            try {
+                var href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) href = 'https://www.tatacliq.com' + href;
+                if (seen.has(href) || !href.includes('tatacliq.com')) continue;
+                seen.add(href);
+                var container = link; for(var i=0;i<4&&container.parentElement;i++) container=container.parentElement;
+                var lines = container.innerText.split('\\n').map(function(t){return t.trim()}).filter(Boolean);
+                var title='', priceRaw='';
+                for (var t of lines) { if(!title && t.length>3 && t.length<120 && !t.startsWith('₹') && !t.includes('% off') && !t.startsWith('Free')) title=t; if(!priceRaw && (t.startsWith('₹')||t.startsWith('Rs')) && t.length<15) priceRaw=t; }
+                if (title && href) results.push({Source:'TataCLiQ',Title:title,Price:priceRaw,Rating:'N/A',Link:href});
+            } catch(e) { continue; }
+        }
+        return results.slice(0,20);
+    """)
     driver.quit()
-    return pd.DataFrame(products)
+    return pd.DataFrame(raw) if raw else pd.DataFrame()
 
 # ---------- Meesho ----------
 def scrape_meesho(query, max_pages=1, headless=True):
     driver = _init_driver(headless)
-    wait = WebDriverWait(driver, 12)
     try:
         driver.get(f"https://www.meesho.com/search?q={query.replace(' ', '+')}")
-        wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'ProductListingCard')] | //a[contains(@href, '/product/')]")))
-    except TimeoutException:
-        print(f"Meesho: Timed out waiting for results.")
-        driver.quit()
-        return pd.DataFrame()
+        time.sleep(3)
+        driver.execute_script("window.scrollBy(0,1500)")
+        time.sleep(2)
     except Exception as e:
         print(f"Meesho page load error: {e}")
         driver.quit()
         return pd.DataFrame()
 
-    products = []
-    for page in range(max_pages):
-        try:
-            items = driver.find_elements(By.XPATH, "//div[contains(@class, 'ProductListingCard')]")
-            if not items:
-                items = driver.find_elements(By.CSS_SELECTOR, "a[href*='/product/']")
-
-            for item in items:
-                try:
-                    try:
-                        title = item.find_element(By.XPATH, ".//h2 | .//p[contains(@class, 'ProductTitle')]").text
-                        if not title:
-                            title = item.find_element(By.TAG_NAME, "h2").text
-                    except:
-                        try:
-                            title = item.text.split('\n')[0] if item.text else ""
-                        except:
-                            title = ""
-
-                    try:
-                        price = item.find_element(By.XPATH, ".//span[contains(@class, 'Product_price')]").text
-                    except:
-                        try:
-                            price_elements = item.find_elements(By.XPATH, ".//span[contains(text(), '₹')]")
-                            price = price_elements[0].text if price_elements else "N/A"
-                        except:
-                            price = "N/A"
-
-                    try:
-                        link = item.find_element(By.TAG_NAME, "a").get_attribute("href")
-                        if not link:
-                            link = item.get_attribute("href")
-                    except:
-                        link = ""
-
-                    if title and link and "meesho.com" in str(link):
-                        if not link.startswith("http"):
-                            link = "https://www.meesho.com" + link
-                        products.append({"Source": "Meesho", "Title": title, "Price": price, "Rating": "N/A", "Link": link})
-                except Exception:
-                    continue
-
-            try:
-                next_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Next')] | //a[contains(@class, 'next')]")
-                if next_btn and page < max_pages - 1:
-                    next_btn.click()
-                    wait.until(EC.staleness_of(items[0]))
-                else:
-                    break
-            except Exception:
-                break
-        except Exception as e:
-            print(f"Meesho scraping error on page {page}: {e}")
-            break
-
+    raw = driver.execute_script("""
+        var results = [], seen = new Set();
+        var links = document.querySelectorAll('a[href*="/product/"]');
+        for (var link of [...links].slice(0,30)) {
+            try {
+                var href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) href = 'https://www.meesho.com' + href;
+                if (seen.has(href)) continue;
+                seen.add(href);
+                var container = link; for(var i=0;i<6&&container.parentElement;i++) container=container.parentElement;
+                var lines = container.innerText.split('\\n').map(function(t){return t.trim()}).filter(Boolean);
+                var title='', priceRaw='';
+                for (var t of lines) { if(!title && t.length>5 && t.length<120 && !t.startsWith('₹') && !t.includes('% off') && !t.includes('Free') && !t.match(/^\\d+$/)) title=t; if(!priceRaw && t.startsWith('₹') && t.length<12) priceRaw=t; }
+                if (title && href) results.push({Source:'Meesho',Title:title,Price:priceRaw,Rating:'N/A',Link:href});
+            } catch(e) { continue; }
+        }
+        return results.slice(0,25);
+    """)
     driver.quit()
-    return pd.DataFrame(products)
+    return pd.DataFrame(raw) if raw else pd.DataFrame()
 
 # ---------- DB Save & Clean ----------
 def save_raw_to_db(df, reset=False, db_name=None):

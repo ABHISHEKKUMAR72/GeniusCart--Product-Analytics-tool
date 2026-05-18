@@ -1,5 +1,5 @@
 /**
- * popup.js — PriceHawk Chrome Extension popup logic.
+ * popup.js — GeniusCart Chrome Extension popup logic.
  * Reads product title from content.js via chrome.storage.session,
  * calls the Flask API at localhost:5000/api/search, renders results.
  * 

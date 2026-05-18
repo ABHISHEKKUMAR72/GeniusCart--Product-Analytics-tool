@@ -1,5 +1,5 @@
 /**
- * background.js — Service worker for PriceHawk extension.
+ * background.js — Service worker for GeniusCart extension.
  * Handles badge updates and communication between content script and popup.
  */
 
