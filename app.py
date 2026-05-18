@@ -81,6 +81,7 @@ def api_search():
         use_meesho = data.get("meesho", True)
         pages = data.get("pages", 1)
         headless = data.get("headless", True)
+        origin = data.get("origin", None)
     else:
         query = request.args.get("q", "").strip()
         use_amazon = request.args.get("amazon", "true").lower() == "true"
@@ -92,6 +93,7 @@ def api_search():
         use_meesho = request.args.get("meesho", "true").lower() == "true"
         pages = 1
         headless = True
+        origin = request.args.get("origin", None)
 
         now = datetime.datetime.utcnow()
         if query in _search_cache:
@@ -102,6 +104,10 @@ def api_search():
 
     if not query:
         return jsonify({"error": "Missing query parameter"}), 400
+
+    # Clear stale cache entry for this query so new searches always get fresh data
+    if query in _search_cache:
+        del _search_cache[query]
 
     try:
         from fast_scraper import run_with_fallback
@@ -130,7 +136,7 @@ def api_search():
         
         # We also trigger the backend cache/DB update if POST (for products view)
         if request.method == "POST":
-            get_cached_or_scrape(query, use_amazon, use_myntra, use_flipkart, use_ajio, use_nykaa, use_tatacliq, use_meesho, pages, headless)
+            get_cached_or_scrape(query, use_amazon, use_myntra, use_flipkart, use_ajio, use_nykaa, use_tatacliq, use_meesho, pages, headless, origin=origin)
 
         return jsonify(response)
     except Exception as e:
