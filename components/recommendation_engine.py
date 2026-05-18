@@ -93,7 +93,11 @@ def add_better_alternatives(df):
 def get_top_recommendations(df):
     """
     Generate 3 "Top Smart Recommendations" for the dashboard.
-    These are the absolute best value picks in the entire scraped dataset.
+    Uses multi-parameter scoring:
+      - Price competitiveness (lower = better)
+      - Rating quality (higher = better)
+      - Source reliability weighting (platforms with more listed products are weighted)
+      - Value efficiency (rating-to-price ratio)
     """
     if df is None or df.empty:
         return []
@@ -105,24 +109,51 @@ def get_top_recommendations(df):
     
     if len(valid_df) < 1:
         return []
-        
-    median_price = valid_df['Price'].median()
-    
-    value_picks = valid_df[
-        (valid_df['Price'] <= median_price) & 
-        (valid_df['NumericRating'] >= 4.0)
-    ]
-    
-    if value_picks.empty:
-        value_picks = valid_df[valid_df['NumericRating'] >= 3.5]
-        if value_picks.empty:
-             value_picks = valid_df
-             
-    top_picks = value_picks.sort_values(by=['NumericRating', 'Price'], ascending=[False, True]).head(3)
-    
+
+    # ── Source reliability: platforms with more products listed get a small boost ──
+    source_counts = valid_df['Source'].value_counts()
+    max_source_count = source_counts.max() if not source_counts.empty else 1
+    valid_df = valid_df.copy()
+    valid_df['SourceReliability'] = valid_df['Source'].map(
+        lambda s: source_counts.get(s, 0) / max_source_count
+    )
+
+    # ── Price competitiveness: normalize price to 0-1 (lower is better) ──
+    min_price = valid_df['Price'].min()
+    max_price = valid_df['Price'].max()
+    price_range = max_price - min_price if max_price > min_price else 1
+    valid_df['PriceScore'] = 1 - ((valid_df['Price'] - min_price) / price_range)
+
+    # ── Rating quality: normalize to 0-1 ──
+    valid_df['RatingScore'] = valid_df['NumericRating'] / 5.0
+
+    # ── Value efficiency: rating per ₹1000 spent ──
+    valid_df['ValueEfficiency'] = np.where(
+        valid_df['Price'] > 0,
+        (valid_df['NumericRating'] / (valid_df['Price'] / 1000)),
+        0
+    )
+    max_ve = valid_df['ValueEfficiency'].max()
+    valid_df['ValueEfficiencyNorm'] = valid_df['ValueEfficiency'] / max_ve if max_ve > 0 else 0
+
+    # ── Composite score (weighted sum) ──
+    valid_df['RecommendationScore'] = (
+        0.30 * valid_df['PriceScore'] +
+        0.30 * valid_df['RatingScore'] +
+        0.25 * valid_df['ValueEfficiencyNorm'] +
+        0.15 * valid_df['SourceReliability']
+    )
+
+    top_picks = valid_df.sort_values(by='RecommendationScore', ascending=False).head(3)
+
     recs = []
     for _, pick in top_picks.iterrows():
-        recs.append(pick.to_dict())
+        rec = pick.to_dict()
+        # Clean up helper columns
+        for col in ['SourceReliability', 'PriceScore', 'RatingScore',
+                     'ValueEfficiency', 'ValueEfficiencyNorm', 'RecommendationScore', 'NumericRating']:
+            rec.pop(col, None)
+        recs.append(rec)
         
     return recs
 

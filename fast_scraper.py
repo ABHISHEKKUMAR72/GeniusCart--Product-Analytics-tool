@@ -56,12 +56,18 @@ async def scrape_amazon_pw(page, query):
     try:
         await page.goto(
             f"https://www.amazon.in/s?k={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("div[data-component-type='s-search-result']", timeout=6000)
+            await page.wait_for_selector("div[data-component-type='s-search-result']", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("div[data-component-type='s-search-result']")
         for card in cards[:25]:
@@ -99,12 +105,18 @@ async def scrape_flipkart_pw(page, query):
     try:
         await page.goto(
             f"https://www.flipkart.com/search?q={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("div[data-id], div._75nlfW, a.CGtC98", timeout=6000)
+            await page.wait_for_selector("div[data-id], div._75nlfW, a.CGtC98", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("div[data-id]")
         if not cards:
@@ -155,12 +167,18 @@ async def scrape_myntra_pw(page, query):
     try:
         await page.goto(
             f"https://www.myntra.com/search?q={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("li.product-base", timeout=6000)
+            await page.wait_for_selector("li.product-base", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("li.product-base")
         for card in cards[:25]:
@@ -202,15 +220,17 @@ async def scrape_meesho_pw(page, query):
     try:
         await page.goto(
             f"https://www.meesho.com/search?q={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("div[class*='ProductCard'], a[href*='/product/']", timeout=6000)
+            await page.wait_for_selector("div[class*='ProductCard'], a[href*='/product/']", timeout=10000)
         except:
             pass
 
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
         await page.evaluate("window.scrollBy(0, 800)")
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("a[href*='/product/']")
         if not cards:
@@ -251,12 +271,18 @@ async def scrape_ajio_pw(page, query):
     try:
         await page.goto(
             f"https://www.ajio.com/search/?text={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector(".item, .rilrtl-products-list__item, div.contentHolder", timeout=6000)
+            await page.wait_for_selector(".item, .rilrtl-products-list__item, div.contentHolder", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all(".item, .rilrtl-products-list__item")
         for card in cards[:20]:
@@ -292,12 +318,18 @@ async def scrape_nykaa_pw(page, query):
     try:
         await page.goto(
             f"https://www.nykaa.com/search/result/?q={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("div.productWrapper, div[class*='product']", timeout=6000)
+            await page.wait_for_selector("div.productWrapper, div[class*='product']", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("div.productWrapper, div[class*='css-']")
         for card in cards[:20]:
@@ -333,12 +365,18 @@ async def scrape_tatacliq_pw(page, query):
     try:
         await page.goto(
             f"https://www.tatacliq.com/search/?searchCategory=all&text={query.replace(' ', '+')}",
-            wait_until="domcontentloaded", timeout=12000,
+            wait_until="domcontentloaded", timeout=18000,
         )
         try:
-            await page.wait_for_selector("div[class*='ProductModule'], div[class*='product']", timeout=6000)
+            await page.wait_for_selector("div[class*='ProductModule'], div[class*='product']", timeout=10000)
         except:
             pass
+
+        # Scroll to trigger lazy-loaded content
+        await page.evaluate("window.scrollBy(0, 1200)")
+        await asyncio.sleep(1.5)
+        await page.evaluate("window.scrollBy(0, 800)")
+        await asyncio.sleep(0.5)
 
         cards = await page.query_selector_all("div[class*='ProductModule'], div[class*='ProductCard']")
         for card in cards[:20]:
@@ -481,18 +519,52 @@ async def run_all_fast(
 
             # Run all concurrently — each uses a separate page in the SAME browser
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            for result in results:
-                if isinstance(result, list):
+
+            # Build a map of platform->scraper_function for tracking
+            platform_map = []
+            if use_myntra:   platform_map.append("Myntra")
+            if use_flipkart:  platform_map.append("Flipkart")
+            if use_amazon:    platform_map.append("Amazon")
+            if use_meesho:    platform_map.append("Meesho")
+            if use_ajio:      platform_map.append("Ajio")
+            if use_nykaa:     platform_map.append("Nykaa")
+            if use_tatacliq:  platform_map.append("TataCLiQ")
+
+            for i, result in enumerate(results):
+                platform_name = platform_map[i] if i < len(platform_map) else f"Unknown_{i}"
+                if isinstance(result, list) and len(result) > 0:
                     all_products.extend(result)
                 elif isinstance(result, Exception):
-                    print(f"[Scraper Error] {result}")
+                    print(f"[Scraper Error] {platform_name}: {result}")
+                    # Inject "not available" placeholder for this platform
+                    all_products.append({
+                        "source": platform_name,
+                        "title": f"Product not available on {platform_name}",
+                        "price": None, "price_raw": None,
+                        "rating": None, "link": None,
+                        "unavailable": True,
+                    })
+                else:
+                    # Empty list — platform returned 0 results
+                    print(f"[Scraper] {platform_name}: 0 results")
+                    all_products.append({
+                        "source": platform_name,
+                        "title": f"Product not available on {platform_name}",
+                        "price": None, "price_raw": None,
+                        "rating": None, "link": None,
+                        "unavailable": True,
+                    })
 
             await browser.close()
     except Exception as e:
         print(f"[FastScraper] Critical error: {e}")
 
-    # Sort by price ascending, nulls at end
-    all_products.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+    # Sort: real products by price ascending, unavailable at end
+    all_products.sort(key=lambda x: (
+        x.get("unavailable", False),
+        x["price"] is None,
+        x["price"] or 0
+    ))
 
     elapsed = time.time() - start
     print(f"[FastScraper] Scraped {len(all_products)} products in {elapsed:.2f}s")

@@ -450,15 +450,17 @@ def scrape_meesho(query, max_pages=1, headless=True):
     return pd.DataFrame(products)
 
 # ---------- DB Save & Clean ----------
-def save_raw_to_db(df, reset=False):
+def save_raw_to_db(df, reset=False, db_name=None):
     if df is None or df.empty: return
-    conn=sqlite3.connect(DB_NAME)
+    _db = db_name or DB_NAME
+    conn=sqlite3.connect(_db)
     if reset: conn.execute(f"DROP TABLE IF EXISTS {TABLE_NAME}")
     df.to_sql(TABLE_NAME, conn, if_exists="append", index=False)
     conn.close()
 
-def clean_and_update_db():
-    conn=sqlite3.connect(DB_NAME)
+def clean_and_update_db(db_name=None):
+    _db = db_name or DB_NAME
+    conn=sqlite3.connect(_db)
     try: df=pd.read_sql(f"SELECT * FROM {TABLE_NAME}", conn)
     except: conn.close(); return
     if df.empty: conn.close(); return
@@ -480,7 +482,7 @@ def clean_and_update_db():
 def run_scrapers_and_update_db(
     query, use_amazon=False, use_myntra=False, use_flipkart=False,
     use_ajio=False, use_nykaa=False, use_tatacliq=False, use_meesho=False,
-    max_pages=1, headless=True
+    max_pages=1, headless=True, db_name=None
 ):
     """
     Runs all selected scrapers IN PARALLEL using ThreadPoolExecutor,
@@ -517,10 +519,11 @@ def run_scrapers_and_update_db(
                 print(f"[✗] {site} scraper raised an exception: {e}")
 
     # Combine all results and save once — avoids SQLite threading lock issues
+    _db = db_name or DB_NAME
     if all_dfs:
         combined = pd.concat(all_dfs, ignore_index=True)
-        save_raw_to_db(combined, reset=True)
-        clean_and_update_db()
-        print(f"[DB] Saved {len(combined)} total products from {len(all_dfs)} sources")
+        save_raw_to_db(combined, reset=True, db_name=_db)
+        clean_and_update_db(db_name=_db)
+        print(f"[DB] Saved {len(combined)} total products from {len(all_dfs)} sources to {_db}")
     else:
         print("[DB] No data to save.")
