@@ -261,19 +261,24 @@ Install all at once: `pip install -r requirements.txt`
 
 ### 🔎 Home Page
 
-Users can search and select platforms (Amazon, Myntra, Flipkart)
-![Home Page](https://github.com/pranayguptag/product-analysis-tool/blob/main/Media/Home.png)
+Users can search and select platforms (Amazon, Myntra, Flipkart, Ajio, Nykaa, Tatacliq, Meesho)
+![Home Page](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Home-Page-new.png)
 
 ### 📋 Product Results
 
 Clean tabular view of products scraped from platforms
-![Products](https://github.com/pranayguptag/product-analysis-tool/blob/main/Media/Products1.png)
-![Products](https://github.com/pranayguptag/product-analysis-tool/blob/main/Media/Products2.png)
+![Products](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Scraped-Data.png)
+![Products](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Extension.png)
 
 ### 📊 Visual Analysis
 
 Compare product prices and insights visually
-![Visuals](https://github.com/pranayguptag/product-analysis-tool/blob/main/Media/Visuals1.png)
+![Visuals](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Scraped-Data.png)
+
+### 📊 Product Comparison
+
+![Comparison](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Comparison.png)
+
 
 ---
 
