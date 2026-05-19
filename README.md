@@ -267,18 +267,17 @@ Users can search and select platforms (Amazon, Myntra, Flipkart, Ajio, Nykaa, Ta
 ### 📋 Product Results
 
 Clean tabular view of products scraped from platforms
-![Products](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Scraped-Data.png)
 ![Products](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Extension.png)
+![Products](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Scraped-Data.png)
 
 ### 📊 Visual Analysis
 
 Compare product prices and insights visually
-![Visuals](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Scraped-Data.png)
+![Visuals](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Graphs.png)
 
 ### 📊 Product Comparison
 
 ![Comparison](https://github.com/pranayguptag/GeniusCart--Product-Analytics-tool/blob/main/Media/Comparison.png)
-
 
 ---
 
